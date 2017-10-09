@@ -1,0 +1,31 @@
+# Dockerfile for creating an ubuntu:latest image with gRPC
+#
+# Example of image building:
+#
+# $ docker build -t grpc-ubuntu:latest -f Dockerfile-grpc .
+#
+FROM ubuntu:latest
+
+MAINTAINER M. Marino <massimo.marino@ieee.org>
+
+RUN apt-get update && apt-get install -y \
+		git pkg-config curl unzip build-essential autoconf libtool libgflags-dev \
+    libgtest-dev clang libc++-dev \
+		&& apt-get clean
+
+# clone gRPC from the master branch in github
+RUN git clone https://github.com/grpc/grpc.git /var/local/git/grpc
+
+# install protoc, grpc, grpc_cli
+RUN cd /var/local/git/grpc && git submodule update --init && \
+    cd /var/local/git/grpc/third_party/protobuf && \
+    ./autogen.sh && ./configure && make -j3 && make install && ldconfig && make clean && \
+    cd /var/local/git/grpc && \
+    make -j3 && make install && ldconfig && make grpc_cli && cd bins/opt && \
+    cp grpc_cli /usr/local/bin && \
+    cd /var/local/git/grpc && make clean
+
+CMD ["/sbin/init"]
+
+## EOF
+
